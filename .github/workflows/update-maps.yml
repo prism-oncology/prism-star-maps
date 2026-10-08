@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "scripts/**"
+      - "star-map/**"
       - ".github/workflows/update-maps.yml"
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
           INCLUDE_ARCHIVED: "true"
           INCLUDE_LOGINS: "false"
           MAX_GEOCODE: "800"
-        run: python scripts/fetch_stargazers.py
+        run: python star-map/fetch_stargazers.py
 
       - name: Commit refreshed data
         run: |
@@ -55,7 +55,7 @@ jobs:
           fi
 
       - name: Build site
-        run: python scripts/build_site.py
+        run: python star-map/build_site.py
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
