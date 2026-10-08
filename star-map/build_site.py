@@ -235,7 +235,7 @@ def main() -> None:
             f"{org} star maps",
             f'<a href="https://github.com/{esc(org)}">github.com/{esc(org)}</a>',
             f"Where {esc(org)} stargazers are",
-            f"One map per repository, rebuilt daily from public GitHub profile locations.",
+            f"One map per repository, rebuilt weekly from public GitHub profile locations.",
             body,
             overall.get("places") or [],
             org,

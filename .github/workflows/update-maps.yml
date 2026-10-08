@@ -1,0 +1,73 @@
+name: Update star maps
+
+on:
+  schedule:
+    - cron: "17 4 * * 1" # weekly, Mondays 04:17 UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/update-maps.yml"
+
+permissions:
+  contents: write 
+  pages: write
+  id-token: write
+
+concurrency:
+  group: star-maps
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch stargazers and geocode locations
+        env:
+          # GitHub only lets admins/collaborators list stargazers (since July 2026),
+          # so the default GITHUB_TOKEN is not enough. See README > "Token".
+          GH_TOKEN: ${{ secrets.STARGAZERS_TOKEN }}
+          ORG: ${{ github.repository_owner }} 
+          INCLUDE_FORKS: "false"
+          INCLUDE_ARCHIVED: "true"
+          INCLUDE_LOGINS: "false"
+          MAX_GEOCODE: "800"
+        run: python scripts/fetch_stargazers.py
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "chore: refresh star maps $(date -u +%F)"
+            git push
+          fi
+
+      - name: Build site
+        run: python scripts/build_site.py
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: update
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
