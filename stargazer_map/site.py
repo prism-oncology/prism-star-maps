@@ -140,11 +140,13 @@ def build(
     data_dir: Path | str = "data",
     site_dir: Path | str = "site",
     layers: Iterable[str] = LAYERS,
+    min_stars: int = 0,
 ) -> Path:
     """Regenerate `site_dir` from scratch and return its path.
 
     `layers` are the map layers shown when a page opens (any of LAYERS); viewers can
-    toggle each one on the map.
+    toggle each one on the map. Repos with fewer than `min_stars` stars get no page
+    or card; their stargazers still count on the overview map.
     """
     data_dir, site_dir = Path(data_dir), Path(site_dir)
     layers = list(dict.fromkeys(layers))
@@ -152,6 +154,7 @@ def build(
         raise ValueError(f"layers must be one or more of {', '.join(LAYERS)}, got {layers}")
     summary = json.loads((data_dir / "summary.json").read_text(encoding="utf-8"))
     org, generated = summary["org"], summary["generated_at"]
+    repos = [r for r in summary["repos"] if (r.get("star_count") or 0) >= min_stars]
     repository = summary.get("repository") or org
 
     if site_dir.exists():
@@ -166,7 +169,7 @@ def build(
     shutil.copy(data_dir / "summary.json", site_dir / "data" / "summary.json")
 
     # Per-repo pages
-    for r in summary["repos"]:
+    for r in repos:
         stats_file = data_dir / "stats" / f"{r['repo']}.json"
         stats = json.loads(stats_file.read_text(encoding="utf-8"))
         crumb = f'<a href="index.html">{esc(org)}</a> / {esc(r["repo"])}'
@@ -190,7 +193,7 @@ def build(
     # Index page
     overall = json.loads((data_dir / "stats" / "_all.json").read_text(encoding="utf-8"))
     cards = []
-    for r in sorted(summary["repos"], key=lambda r: -(r.get("star_count") or 0)):
+    for r in sorted(repos, key=lambda r: -(r.get("star_count") or 0)):
         meta = f"★ {fmt(r.get('star_count'))}"
         if r.get("located") is not None:
             meta += f" · {fmt(r['located'])} mapped · {fmt(r.get('countries'))} countries"
@@ -210,7 +213,7 @@ def build(
         page(
             f"{org} star maps",
             f'<a href="https://github.com/{esc(org)}">github.com/{esc(org)}</a>',
-            f"Where {esc("PRISM Institute" if org == "prism-oncology" else org)} stargazers are",
+            f"Where {esc('PRISM Institute' if org == 'prism-oncology' else org)} stargazers are",
             "One map per repository, rebuilt weekly from public GitHub profile locations.",
             body,
             map_data(overall, layers),
@@ -220,5 +223,5 @@ def build(
         encoding="utf-8",
     )
     (site_dir / ".nojekyll").write_text("")
-    print(f"Built {len(summary['repos']) + 1} pages in {site_dir}")
+    print(f"Built {len(repos) + 1} pages in {site_dir}")
     return site_dir

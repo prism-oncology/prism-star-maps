@@ -83,3 +83,14 @@ def test_build_layers(tmp_path):
     for bad in ([], ["heat"]):
         with pytest.raises(ValueError):
             build(data, tmp_path / "site", layers=bad)
+
+
+def test_build_min_stars(tmp_path):
+    data = make_data(tmp_path)  # one repo, "tool", with 2 stars
+    site = build(data, tmp_path / "site", min_stars=3)
+    assert not (site / "tool.html").exists()
+    index = (site / "index.html").read_text(encoding="utf-8")
+    assert 'href="tool.html"' not in index
+    # The overview map still counts the hidden repo's stargazers.
+    assert embedded_map_data(index)["countries"] == {"FR": 1}
+    assert (build(data, tmp_path / "site", min_stars=2) / "tool.html").exists()
