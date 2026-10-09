@@ -91,15 +91,21 @@ def fetch(
         try:
             nodes = github.list_stargazers(org, r["name"])
         except PermissionError as exc:
-            errors[r["name"]] = "Token cannot list stargazers (needs admin/collaborator access)."
-            print(f"  skipped: {str(exc)[:200]}", file=sys.stderr)
+            errors[r["name"]] = f"GitHub refused to list stargazers: {str(exc)[:200]}"
+            print(f"  skipped: {exc}", file=sys.stderr)
             continue
         per_repo_users[r["name"]] = {
             n["login"]: geocode.normalise_location(n.get("location")) for n in nodes
         }
 
-    if not per_repo_users:
-        raise RuntimeError("No stargazer data could be fetched; check the token.")
+    starred = [r["name"] for r in repos if r["stargazerCount"] > 0]
+    if starred and all(name in errors for name in starred):
+        # Every refusal is then a token problem, not a per-repo one.
+        raise RuntimeError(
+            "The token could not list stargazers for any repository. It must belong to an "
+            f"admin or collaborator of {org}'s repositories (see README > Token).\n"
+            f"GitHub said: {errors[starred[0]]}"
+        )
 
     cache = geocode.load_cache(cache_path)
     all_locations = {loc for users in per_repo_users.values() for loc in users.values() if loc}

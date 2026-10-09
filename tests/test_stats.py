@@ -105,3 +105,24 @@ def test_fetch(tmp_path, monkeypatch):
     lookups.clear()
     stats.fetch("me", data)
     assert lookups == []
+
+
+def test_fetch_fails_when_token_cannot_read_any_repo(tmp_path, monkeypatch):
+    import pytest
+
+    from stargazer_map import github, stats
+
+    repos = [
+        {"name": n, "url": "u", "description": None, "stargazerCount": c,
+         "isFork": False, "isArchived": False, "primaryLanguage": None}
+        for n, c in (("starred", 2), ("empty", 0))
+    ]  # fmt: skip
+
+    def refuse(owner, repo):
+        raise PermissionError("Resource not accessible by personal access token")
+
+    monkeypatch.setattr(github, "list_repos", lambda *a: repos)
+    monkeypatch.setattr(github, "list_stargazers", refuse)
+    with pytest.raises(RuntimeError, match="Resource not accessible"):
+        stats.fetch("me", tmp_path / "data")
+    assert not (tmp_path / "data" / "summary.json").exists()
