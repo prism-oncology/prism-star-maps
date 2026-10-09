@@ -31,7 +31,7 @@ def fmt(n) -> str:
     return f"{n:,}" if isinstance(n, int) else "–"
 
 
-def page(title: str, crumb: str, heading: str, sub: str, body: str, places, org: str, generated: str) -> str:
+def page(title: str, crumb: str, heading: str, sub: str, body: str, places, repository: str, generated: str) -> str:
     map_block = ""
     if places is not None:
         data = json.dumps(places, ensure_ascii=False).replace("</", "<\\/")
@@ -51,7 +51,7 @@ def page(title: str, crumb: str, heading: str, sub: str, body: str, places, org:
 <main>{body}</main>
 <footer>Updated {esc(generated[:16].replace('T', ' '))} UTC · Locations are self-reported on GitHub profiles,
 geocoded with <a href="https://nominatim.openstreetmap.org/">OpenStreetMap Nominatim</a> ·
-<a href="https://github.com/{esc(org)}/prism-star-maps">source</a></footer>
+<a href="https://github.com/{esc(repository)}">source</a></footer>
 {map_block}
 </body></html>
 """
@@ -109,6 +109,7 @@ def detail_body(stats: dict, star_count=None) -> str:
 def main() -> None:
     summary = json.loads((DATA / "summary.json").read_text(encoding="utf-8"))
     org, generated = summary["org"], summary["generated_at"]
+    repository = summary.get("repository") or org
 
     if SITE.exists():
         shutil.rmtree(SITE)
@@ -136,7 +137,7 @@ def main() -> None:
                 esc(r.get("description") or "Where this repository's stargazers are."),
                 detail_body(stats, r.get("star_count")),
                 stats.get("places") or [],
-                org,
+                repository,
                 generated,
             ),
             encoding="utf-8",
@@ -173,7 +174,7 @@ def main() -> None:
             f"One map per repository, rebuilt weekly from public GitHub profile locations.",
             body,
             overall.get("places") or [],
-            org,
+            repository,
             generated,
         ),
         encoding="utf-8",

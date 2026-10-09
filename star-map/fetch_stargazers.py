@@ -23,7 +23,24 @@ DATA = ROOT / "data"
 STATS = DATA / "stats"
 CACHE_FILE = DATA / "geocode-cache.json"
 
-ORG = os.environ.get("ORG", "prism-oncology")
+
+def own_repository() -> str | None:
+    """owner/name of this checkout: set by GitHub Actions, else read from the git remote."""
+    if os.environ.get("GITHUB_REPOSITORY"):
+        return os.environ["GITHUB_REPOSITORY"]
+    proc = subprocess.run(
+        ["git", "-C", str(ROOT), "remote", "get-url", "origin"],
+        capture_output=True, text=True,
+    )
+    match = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?$", proc.stdout.strip())
+    return match.group(1) if match else None
+
+
+REPOSITORY = own_repository()
+# Defaults to the owner of this repo, so a fork maps its own stars.
+ORG = os.environ.get("ORG") or (REPOSITORY.split("/")[0] if REPOSITORY else None)
+if not ORG:
+    sys.exit("Set ORG to the GitHub user or organisation whose stars to map.")
 
 
 def env_flag(name: str, default: bool) -> bool:
@@ -36,7 +53,7 @@ INCLUDE_LOGINS = env_flag("INCLUDE_LOGINS", False)
 MAX_GEOCODE = int(os.environ.get("MAX_GEOCODE", "800"))
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-USER_AGENT = f"prism-star-maps/1.0 (https://github.com/{ORG}/prism-star-maps)"
+USER_AGENT = f"star-maps/1.0 (https://github.com/{REPOSITORY or ORG})"
 
 # --------------------------------------------------------------------------
 # GitHub (via gh CLI)
@@ -279,7 +296,7 @@ def main() -> int:
     }
     geocode_all(all_locations, cache)
 
-    summary = {"org": ORG, "generated_at": now, "repos": []}
+    summary = {"org": ORG, "repository": REPOSITORY, "generated_at": now, "repos": []}
     union: dict[str, str | None] = {}
     for r in repos:
         name = r["name"]
