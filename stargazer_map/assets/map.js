@@ -69,7 +69,7 @@
     .catch(function(){ /* file:// or offline: the bubbles still work */ });
 
   // ---- Legend for the colour scale ----------------------------------------
-  var legend = L.control({position:'topleft'});
+  var legend = L.control({position:'bottomleft'});
   legend.onAdd = function(){
     var div = L.DomUtil.create('div','map-legend');
     var stops = [];

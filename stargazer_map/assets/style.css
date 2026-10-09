@@ -67,3 +67,6 @@ color:var(--muted);font-variant-numeric:tabular-nums}
 .leaflet-bar a,.leaflet-bar a:hover{background:var(--card);color:var(--fg);border-color:var(--line)}
 .leaflet-tooltip{background:var(--card);color:var(--fg);border-color:var(--line)}
 @media(max-width:600px){#map{height:420px}.map-legend{width:150px}}
+/* On phones the map credits wrap onto two lines across the whole bottom edge:
+   lift the legend above them. */
+@media(max-width:600px){.leaflet-bottom.leaflet-left{bottom:34px}}
