@@ -4,6 +4,7 @@
   site/index.html          overview: org-wide map + one card per repo
   site/<repo>.html         one map page per repository
   site/data/*.json         the aggregated stats (handy for other tools)
+  site/assets/             style.css + map.js, copied from this folder
 """
 
 from __future__ import annotations
@@ -13,83 +14,13 @@ import json
 import shutil
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent.parent
 DATA = ROOT / "data"
 SITE = ROOT / "site"
 
 LEAFLET = "https://unpkg.com/leaflet@1.9.4/dist"
-
-CSS = """
-:root{--bg:#f7f7f5;--card:#fff;--fg:#1d1d1f;--muted:#6b6b70;--line:#e4e4e1;
---accent:#c2410c;--accent-soft:rgba(194,65,12,.18);--warn:#b45309}
-@media (prefers-color-scheme:dark){:root{--bg:#141416;--card:#1d1d20;--fg:#ececee;
---muted:#9a9aa1;--line:#2c2c31;--accent:#fb923c;--accent-soft:rgba(251,146,60,.22);--warn:#fbbf24}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);
-font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
-a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
-header{padding:28px 16px 8px;max-width:1100px;margin:auto}
-header .crumb{font-size:13px;color:var(--muted)}
-h1{margin:4px 0 4px;font-size:28px;letter-spacing:-.01em}
-.sub{color:var(--muted);margin:0}
-main{max-width:1100px;margin:auto;padding:8px 16px 48px}
-.kpis{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;
-padding:10px 14px;min-width:120px}
-.kpi b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
-.kpi span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-#map{height:520px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:24px}
-.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;
-padding:14px 16px;color:var(--fg)}
-.card:hover{border-color:var(--accent);text-decoration:none}
-.card h3{margin:0 0 4px;font-size:16px;color:var(--accent)}
-.card p{margin:0 0 10px;color:var(--muted);font-size:13px;min-height:2.6em}
-.card .meta{font-size:13px;font-variant-numeric:tabular-nums}
-.badge{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 7px;
-color:var(--muted);margin-left:6px;vertical-align:2px}
-.warn{color:var(--warn);font-size:13px}
-.cols{display:grid;grid-template-columns:1fr;gap:24px;margin-top:24px}
-@media(min-width:800px){.cols{grid-template-columns:1fr 1fr}}
-h2{font-size:17px;margin:0 0 10px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td{padding:5px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
-td.n{text-align:right;width:56px}
-td.bar{width:40%;padding-left:10px}
-td.bar i{display:block;height:8px;border-radius:4px;background:var(--accent)}
-footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 16px}
-.leaflet-popup-content{font:13px/1.4 inherit}
-"""
-
-MAP_JS = """
-(function(){
-  var places = %s;
-  var map = L.map('map',{worldCopyJump:true,minZoom:1}).setView([25,10],2);
-  var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
-  // Esri gray canvas: no API key needed (CARTO basemaps now require one).
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_' + (dark?'Dark':'Light') + '_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
-    maxZoom:16,
-    attribution:'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
-  }).addTo(map);
-  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  var bounds = [];
-  places.forEach(function(p){
-    var r = 5 + 4*Math.sqrt(p.count);
-    var m = L.circleMarker([p.lat,p.lon],{radius:r,color:accent,weight:1.5,
-      fillColor:accent,fillOpacity:.45}).addTo(map);
-    var txt = '<b>'+escapeHtml(p.label)+'</b><br>'+p.count+' stargazer'+(p.count>1?'s':'');
-    if (p.logins) txt += '<br>' + p.logins.map(function(l){
-      return '<a href="https://github.com/'+encodeURIComponent(l)+'" target="_blank" rel="noopener">@'+escapeHtml(l)+'</a>';
-    }).join(', ');
-    m.bindPopup(txt);
-    bounds.push([p.lat,p.lon]);
-  });
-  if (bounds.length > 1) map.fitBounds(bounds,{padding:[30,30],maxZoom:5});
-  else if (bounds.length === 1) map.setView(bounds[0],4);
-  function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-})();
-"""
+ASSETS = ("style.css", "map.js")  # copied from this folder into site/assets/
 
 
 def esc(s) -> str:
@@ -105,15 +36,16 @@ def page(title: str, crumb: str, heading: str, sub: str, body: str, places, org:
     if places is not None:
         data = json.dumps(places, ensure_ascii=False).replace("</", "<\\/")
         map_block = (
+            f'<script id="places" type="application/json">{data}</script>'
             f'<script src="{LEAFLET}/leaflet.js"></script>'
-            f"<script>{MAP_JS % data}</script>"
+            '<script src="assets/map.js"></script>'
         )
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(title)}</title>
 <link rel="stylesheet" href="{LEAFLET}/leaflet.css">
-<style>{CSS}</style></head>
+<link rel="stylesheet" href="assets/style.css"></head>
 <body>
 <header><div class="crumb">{crumb}</div><h1>{heading}</h1><p class="sub">{sub}</p></header>
 <main>{body}</main>
@@ -181,6 +113,9 @@ def main() -> None:
     if SITE.exists():
         shutil.rmtree(SITE)
     (SITE / "data").mkdir(parents=True)
+    (SITE / "assets").mkdir()
+    for name in ASSETS:
+        shutil.copy(HERE / name, SITE / "assets" / name)
     for f in (DATA / "stats").glob("*.json"):
         shutil.copy(f, SITE / "data" / f.name)
     shutil.copy(DATA / "summary.json", SITE / "data" / "summary.json")

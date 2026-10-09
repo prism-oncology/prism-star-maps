@@ -55,7 +55,7 @@ jobs:
           fi
 
       - name: Build site
-        run: python star-map/build_site.py
+        run: python star-map/site_builder/build_site.py
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
