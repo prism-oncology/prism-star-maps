@@ -7,7 +7,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "star-map/**"
+      - "stargazer_map/**"
+      - "pyproject.toml"
       - ".github/workflows/update-maps.yml"
 
 permissions:
@@ -30,6 +31,8 @@ jobs:
         with:
           python-version: "3.12"
 
+      - run: pip install .
+
       - name: Fetch stargazers and geocode locations
         env:
           # GitHub only lets admins/collaborators list stargazers (since July 2026),
@@ -40,7 +43,7 @@ jobs:
           INCLUDE_ARCHIVED: "true"
           INCLUDE_LOGINS: "false"
           MAX_GEOCODE: "800"
-        run: python star-map/fetch_stargazers.py
+        run: stargazer-map fetch
 
       - name: Commit refreshed data
         run: |
@@ -55,7 +58,7 @@ jobs:
           fi
 
       - name: Build site
-        run: python star-map/site_builder/build_site.py
+        run: stargazer-map build
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
