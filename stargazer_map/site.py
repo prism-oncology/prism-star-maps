@@ -77,14 +77,14 @@ Locations are self-reported on GitHub profiles, geocoded with
 def kpis(stats: dict, star_count=None) -> str:
     stargazers = stats.get("stargazers")
     located = stats.get("located")
-    pct = f"{round(100 * located / stargazers)}%" if stargazers and located is not None else "–"
+    # Share of stargazers whose profile location could be placed on the map.
+    pct = f" ({round(100 * located / stargazers)}%)" if stargazers and located is not None else ""
     items = []
     if star_count is not None:
         items.append((fmt(star_count), "stars"))
     items += [
         (fmt(stargazers), "stargazers read" if star_count is not None else "unique stargazers"),
-        (fmt(located), "on the map"),
-        (pct, "located"),
+        (fmt(located), f"stargazers located{pct}"),
         (fmt(len(stats.get("countries") or [])), "countries"),
     ]
     return (
