@@ -19,12 +19,7 @@ Each public repository gets its own map, and an overview page combines all of th
 
 Fork this repository into the account or organisation whose stars you want to map. The maps cover every public repository the fork's owner has, except forks.
 
-1. **Create a token.** Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with these settings (see [Token](#token) for why):
-   - Resource owner: your account or organisation
-   - Repository access: all repositories
-   - Permissions: the default read-only metadata permission
-
-   Organisations may need to approve the token.
+1. **Create a token.** Create a [classic personal access token](https://github.com/settings/tokens/new?scopes=public_repo&description=stargazer-map) with only the **`public_repo`** scope (the link preselects it). See [Token](#token) for why. Fine-grained tokens don't work for this.
 2. **Add it as a secret.** In your fork, go to *Settings → Secrets and variables → Actions → New repository secret*. Name it `STARGAZERS_TOKEN` and paste the token.
 3. **Enable GitHub Pages.** Go to *Settings → Pages* and set *Source* to **GitHub Actions**.
 4. **Enable Actions.** Open the *Actions* tab and enable workflows. GitHub turns off scheduled workflows in forks until you do this.
@@ -47,7 +42,9 @@ Set these in the `env:` block of `.github/workflows/update-maps.yml`:
 
 ## Token
 
-GitHub only lets admins and collaborators of a repository list its stargazers, so the workflow's built-in `GITHUB_TOKEN` is not enough. The token in `STARGAZERS_TOKEN` must belong to someone with admin or collaborator access to the repositories you want to map. If a repository can't be read, its page shows a warning and keeps the data from the last successful run.
+GitHub only lets admins and collaborators of a repository list its stargazers, so the workflow's built-in `GITHUB_TOKEN` is not enough. `STARGAZERS_TOKEN` must be a classic personal access token with the `public_repo` scope, created by someone with admin or collaborator access to the repositories you want to map. For an organisation that uses SAML single sign-on, also authorise the token for that organisation (*Configure SSO* next to the token).
+
+When a token expires or loses access, the workflow fails and the log quotes GitHub's refusal. If only some repositories are refused, their pages show a warning and keep the data from the last successful run.
 
 ## Run locally
 
