@@ -73,6 +73,9 @@ jobs:
           # Map layers shown when a page opens: countries, bubbles, or both.
           # Viewers can toggle each one on the map.
           MAP_LAYERS: "countries,bubbles"
+          # Repos with fewer stars get no page or card (their stargazers still count on
+          # the overview map). prism-oncology lists only repos with 10+ stars.
+          MIN_STARS: ${{ github.repository_owner == 'prism-oncology' && '10' || '0' }}
         run: stargazer-map build
 
       - uses: actions/configure-pages@v5
