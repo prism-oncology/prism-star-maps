@@ -210,7 +210,7 @@ def build(
         page(
             f"{org} star maps",
             f'<a href="https://github.com/{esc(org)}">github.com/{esc(org)}</a>',
-            f"Where {esc(org)} stargazers are",
+            f"Where {esc("PRISM Institute" if org == "prism-oncology" else org)} stargazers are",
             "One map per repository, rebuilt weekly from public GitHub profile locations.",
             body,
             map_data(overall, layers),
