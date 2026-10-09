@@ -27,7 +27,7 @@ Fork this repository into the account or organisation whose stars you want to ma
 
 The site is published at `https://<owner>.github.io/<fork-name>/`.
 
-The first run replaces the upstream data in `data/`. `data/geocode-cache.json` keeps locations that have already been geocoded, so they aren't looked up again. Nominatim allows about one request per second, so each run geocodes at most 800 new locations. If you have more stargazers than that, the maps fill in over several runs.
+The workflow keeps its data (stats and `geocode-cache.json`) on a separate `data` branch, so it never commits to `main`. A fork that didn't copy that branch starts with empty data. The geocode cache keeps locations that have already been geocoded, so they aren't looked up again. Nominatim allows about one request per second, so each run geocodes at most 800 new locations. If you have more stargazers than that, the maps fill in over several runs.
 
 ### Options
 

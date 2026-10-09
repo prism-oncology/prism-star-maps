@@ -33,6 +33,18 @@ jobs:
 
       - run: pip install .
 
+      # data/ lives on its own `data` branch, written only by this workflow, so the
+      # weekly refresh never commits to main. A fork without that branch starts fresh.
+      - name: Check out previous data
+        run: |
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth 1 origin data:data; then
+            git worktree add data data
+          else
+            git worktree add --orphan -b data data
+          fi
+
       - name: Fetch stargazers and geocode locations
         env:
           # GitHub only lets admins/collaborators list stargazers (since July 2026),
@@ -46,29 +58,15 @@ jobs:
         run: stargazer-map fetch
 
       - name: Commit refreshed data
+        working-directory: data
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # The fetch can take a while, and main may have moved meanwhile (a push, a fork
-          # sync). Put the fresh data/ on top of the latest main instead of failing the push.
-          cp -r data "$RUNNER_TEMP/data"
-          for attempt in 1 2 3; do
-            git fetch --quiet origin "$GITHUB_REF_NAME"
-            git reset --quiet --hard FETCH_HEAD
-            rm -rf data && cp -r "$RUNNER_TEMP/data" data
-            git add -A data/
-            if git diff --cached --quiet; then
-              echo "No data changes."
-              exit 0
-            fi
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No data changes."
+          else
             git commit --quiet -m "chore: refresh star maps $(date -u +%F)"
-            if git push origin "HEAD:$GITHUB_REF_NAME"; then
-              exit 0
-            fi
-            echo "Push rejected (attempt $attempt/3), retrying on the latest $GITHUB_REF_NAME."
-            sleep $((attempt * 5))
-          done
-          exit 1
+            git push origin HEAD:data
+          fi
 
       - name: Build site
         env:
