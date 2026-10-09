@@ -1,6 +1,7 @@
 {
  "org": "prism-oncology",
- "generated_at": "2026-10-08T17:54:08+00:00",
+ "repository": "prism-oncology/stargazer-map",
+ "generated_at": "2026-10-09T08:43:42+00:00",
  "repos": [
   {
    "repo": "sopa",
@@ -75,8 +76,8 @@
    "countries": 1
   },
   {
-   "repo": "prism-star-maps",
-   "url": "https://github.com/prism-oncology/prism-star-maps",
+   "repo": "stargazer-map",
+   "url": "https://github.com/prism-oncology/stargazer-map",
    "description": "Weekly, automatically updated maps of where the stargazers of every prism-oncology repository",
    "language": "Python",
    "archived": false,

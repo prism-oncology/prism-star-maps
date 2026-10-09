@@ -504,6 +504,13 @@
   "country": "Switzerland",
   "country_code": "CH"
  },
+ "lebanon, nh": {
+  "lat": 43.643,
+  "lon": -72.252,
+  "label": "Lebanon, United States",
+  "country": "United States",
+  "country_code": "US"
+ },
  "leuven, belgium": {
   "lat": 50.879,
   "lon": 4.701,
