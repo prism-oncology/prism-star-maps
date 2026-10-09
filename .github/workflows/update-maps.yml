@@ -71,6 +71,10 @@ jobs:
           exit 1
 
       - name: Build site
+        env:
+          # Map layers shown when a page opens: countries, bubbles, or both.
+          # Viewers can toggle each one on the map.
+          MAP_LAYERS: "countries,bubbles"
         run: stargazer-map build
 
       - uses: actions/configure-pages@v5

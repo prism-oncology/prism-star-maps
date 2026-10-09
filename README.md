@@ -13,7 +13,7 @@
 
 Weekly, automatically updated maps of where the stargazers of a GitHub user's or organisation's repositories are, published with GitHub Pages. Fork it to get maps for your own repositories.
 
-Each public repository gets its own map, and an overview page combines all of them. Locations come from the free-text "location" field on stargazers' GitHub profiles and are geocoded with [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org/).
+Each public repository gets its own map, and an overview page combines all of them. Each map can show countries coloured by their number of stargazers, a bubble for each place, or both. Visitors switch each view on or off on the map. Locations come from the free-text "location" field on stargazers' GitHub profiles and are geocoded with [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org/).
 
 ## Make your own
 
@@ -31,7 +31,7 @@ The first run replaces the upstream data in `data/`. `data/geocode-cache.json` k
 
 ### Options
 
-Set these in the `env:` block of `.github/workflows/update-maps.yml`:
+Set these in the `env:` blocks of `.github/workflows/update-maps.yml`. `MAP_LAYERS` goes on the *Build site* step, the others on the *Fetch* step:
 
 | Variable | Default | Effect |
 |---|---|---|
@@ -39,6 +39,7 @@ Set these in the `env:` block of `.github/workflows/update-maps.yml`:
 | `INCLUDE_ARCHIVED` | `true` | Include archived repositories |
 | `INCLUDE_LOGINS` | `false` | Show stargazers' usernames in map popups and in the published JSON |
 | `MAX_GEOCODE` | `800` | Maximum number of new locations geocoded per run |
+| `MAP_LAYERS` | `countries,bubbles` | Map views shown when a page opens: `countries`, `bubbles`, or both. Visitors can still toggle each one |
 
 ## Token
 

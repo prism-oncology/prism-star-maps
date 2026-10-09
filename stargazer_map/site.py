@@ -3,7 +3,7 @@
 index.html          overview: org-wide map + one card per repo
 <repo>.html         one map page per repository
 data/*.json         the aggregated stats (handy for other tools)
-assets/             style.css + map.js, copied from stargazer_map/assets/
+assets/             style.css, map.js and countries.geojson, copied from stargazer_map/assets/
 """
 
 from __future__ import annotations
@@ -11,11 +11,15 @@ from __future__ import annotations
 import html
 import json
 import shutil
+from collections.abc import Iterable
 from importlib import resources
 from pathlib import Path
 
 LEAFLET = "https://unpkg.com/leaflet@1.9.4/dist"
-ASSETS = ("style.css", "map.js")
+ASSETS = ("style.css", "map.js", "countries.geojson")
+# Map layers a viewer can toggle: countries coloured by stargazer count, and one
+# bubble per place sized by count.
+LAYERS = ("countries", "bubbles")
 
 
 def esc(s) -> str:
@@ -32,15 +36,15 @@ def page(
     heading: str,
     sub: str,
     body: str,
-    places,
+    map_data: dict | None,
     repository: str,
     generated: str,
 ) -> str:
     map_block = ""
-    if places is not None:
-        data = json.dumps(places, ensure_ascii=False).replace("</", "<\\/")
+    if map_data is not None:
+        data = json.dumps(map_data, ensure_ascii=False).replace("</", "<\\/")
         map_block = (
-            f'<script id="places" type="application/json">{data}</script>'
+            f'<script id="map-data" type="application/json">{data}</script>'
             f'<script src="{LEAFLET}/leaflet.js"></script>'
             '<script src="assets/map.js"></script>'
         )
@@ -115,9 +119,29 @@ def detail_body(stats: dict, star_count=None) -> str:
     return warn + kpis(stats, star_count) + map_and_rankings(stats)
 
 
-def build(data_dir: Path | str = "data", site_dir: Path | str = "site") -> Path:
-    """Regenerate `site_dir` from scratch and return its path."""
+def map_data(stats: dict, layers: list[str]) -> dict:
+    """What map.js draws: bubbles, country counts, and the layers shown by default."""
+    return {
+        "places": stats.get("places") or [],
+        "countries": {c["code"]: c["count"] for c in stats.get("countries") or []},
+        "layers": layers,
+    }
+
+
+def build(
+    data_dir: Path | str = "data",
+    site_dir: Path | str = "site",
+    layers: Iterable[str] = LAYERS,
+) -> Path:
+    """Regenerate `site_dir` from scratch and return its path.
+
+    `layers` are the map layers shown when a page opens (any of LAYERS); viewers can
+    toggle each one on the map.
+    """
     data_dir, site_dir = Path(data_dir), Path(site_dir)
+    layers = list(dict.fromkeys(layers))
+    if not layers or not set(layers) <= set(LAYERS):
+        raise ValueError(f"layers must be one or more of {', '.join(LAYERS)}, got {layers}")
     summary = json.loads((data_dir / "summary.json").read_text(encoding="utf-8"))
     org, generated = summary["org"], summary["generated_at"]
     repository = summary.get("repository") or org
@@ -148,7 +172,7 @@ def build(data_dir: Path | str = "data", site_dir: Path | str = "site") -> Path:
                 heading,
                 esc(r.get("description") or "Where this repository's stargazers are."),
                 detail_body(stats, r.get("star_count")),
-                stats.get("places") or [],
+                map_data(stats, layers),
                 repository,
                 generated,
             ),
@@ -181,7 +205,7 @@ def build(data_dir: Path | str = "data", site_dir: Path | str = "site") -> Path:
             f"Where {esc(org)} stargazers are",
             "One map per repository, rebuilt weekly from public GitHub profile locations.",
             body,
-            overall.get("places") or [],
+            map_data(overall, layers),
             repository,
             generated,
         ),

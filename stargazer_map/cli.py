@@ -1,7 +1,7 @@
 """Command line: `stargazer-map fetch` then `stargazer-map build`.
 
 Options default to environment variables (ORG, INCLUDE_FORKS, INCLUDE_ARCHIVED,
-INCLUDE_LOGINS, MAX_GEOCODE) so the GitHub workflow can configure them in `env:`.
+INCLUDE_LOGINS, MAX_GEOCODE, MAP_LAYERS) so the GitHub workflow can configure them in `env:`.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import os
 import sys
 
 from . import __version__, github
-from .site import build
+from .site import LAYERS, build
 from .stats import fetch
 
 
@@ -59,13 +59,26 @@ def parser() -> argparse.ArgumentParser:
     b = sub.add_parser("build", help="render the static site from the data dir")
     b.add_argument("--data", default="data", help="data directory (default: data)")
     b.add_argument("--site", default="site", help="output directory (default: site)")
+    b.add_argument(
+        "--layers",
+        default=os.environ.get("MAP_LAYERS", ",".join(LAYERS)),
+        help=(
+            "comma-separated map layers shown by default, from: "
+            f"{', '.join(LAYERS)} (default: all; viewers can toggle each)"
+        ),
+    )
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     if args.command == "build":
-        build(args.data, args.site)
+        layers = [x.strip() for x in args.layers.split(",") if x.strip()]
+        try:
+            build(args.data, args.site, layers)
+        except ValueError as exc:
+            print(exc, file=sys.stderr)
+            return 2
         return 0
 
     repository = github.current_repository()

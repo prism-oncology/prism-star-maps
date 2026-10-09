@@ -1,4 +1,7 @@
 import json
+import re
+
+import pytest
 
 from stargazer_map.site import build
 
@@ -7,7 +10,7 @@ def write(path, obj):
     path.write_text(json.dumps(obj), encoding="utf-8")
 
 
-def test_build(tmp_path):
+def make_data(tmp_path):
     data = tmp_path / "data"
     (data / "stats").mkdir(parents=True)
     write(
@@ -40,14 +43,41 @@ def test_build(tmp_path):
     }
     write(data / "stats" / "tool.json", stats)
     write(data / "stats" / "_all.json", stats)
+    return data
 
-    site = build(data, tmp_path / "site")
+
+def embedded_map_data(page):
+    match = re.search(r'<script id="map-data" type="application/json">(.*?)</script>', page)
+    return json.loads(match.group(1))
+
+
+def test_build(tmp_path):
+    site = build(make_data(tmp_path), tmp_path / "site")
 
     files = {p.relative_to(site).as_posix() for p in site.rglob("*") if p.is_file()}
     assert {"index.html", "tool.html", ".nojekyll", "assets/style.css", "assets/map.js",
+            "assets/countries.geojson",
             "data/summary.json", "data/tool.json", "data/_all.json"} <= files  # fmt: skip
     index = (site / "index.html").read_text(encoding="utf-8")
     assert 'href="https://github.com/me/stargazer-map">source' in index
     assert 'href="tool.html"' in index
     # A place label must not be able to close the embedded JSON script.
-    assert "Evil <\\/script>" in (site / "tool.html").read_text(encoding="utf-8")
+    tool = (site / "tool.html").read_text(encoding="utf-8")
+    assert "Evil <\\/script>" in tool
+    assert embedded_map_data(tool) == {
+        "places": [{"lat": 1, "lon": 2, "label": "Evil </script>", "count": 1}],
+        "countries": {"FR": 1},
+        "layers": ["countries", "bubbles"],
+    }
+    countries = json.loads((site / "assets" / "countries.geojson").read_text(encoding="utf-8"))
+    assert {"FR", "SG", "BH"} <= {f["id"] for f in countries["features"]}
+
+
+def test_build_layers(tmp_path):
+    data = make_data(tmp_path)
+    site = build(data, tmp_path / "site", layers=["bubbles"])
+    index = (site / "index.html").read_text(encoding="utf-8")
+    assert embedded_map_data(index)["layers"] == ["bubbles"]
+    for bad in ([], ["heat"]):
+        with pytest.raises(ValueError):
+            build(data, tmp_path / "site", layers=bad)
