@@ -3,7 +3,7 @@
 index.html          overview: org-wide map + one card per repo
 <repo>.html         one map page per repository
 data/*.json         the aggregated stats (handy for other tools)
-assets/             style.css, map.js and countries.geojson, copied from stargazer_map/assets/
+assets/             style.css, theme.js, map.js, countries.geojson (from stargazer_map/assets/)
 """
 
 from __future__ import annotations
@@ -16,10 +16,15 @@ from importlib import resources
 from pathlib import Path
 
 LEAFLET = "https://unpkg.com/leaflet@1.9.4/dist"
-ASSETS = ("style.css", "map.js", "countries.geojson")
+ASSETS = ("style.css", "theme.js", "map.js", "countries.geojson")
 # Map layers a viewer can toggle: countries coloured by stargazer count, and one
 # bubble per place sized by count.
 LAYERS = ("countries", "bubbles")
+# Applies the visitor's saved light/dark choice before first paint (see theme.js).
+THEME_INIT = (
+    "<script>try{var t=localStorage.getItem('stargazer-map:theme');"
+    "if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>"
+)
 
 
 def esc(s) -> str:
@@ -53,14 +58,17 @@ def page(
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(title)}</title>
 <link rel="stylesheet" href="{LEAFLET}/leaflet.css">
-<link rel="stylesheet" href="assets/style.css"></head>
+<link rel="stylesheet" href="assets/style.css">
+{THEME_INIT}</head>
 <body>
-<header><div class="crumb">{crumb}</div><h1>{heading}</h1><p class="sub">{sub}</p></header>
+<header><button id="theme-toggle" class="theme-toggle" type="button"></button>
+<div class="crumb">{crumb}</div><h1>{heading}</h1><p class="sub">{sub}</p></header>
 <main>{body}</main>
 <footer>Updated {esc(generated[:16].replace("T", " "))} UTC ·
 Locations are self-reported on GitHub profiles, geocoded with
 <a href="https://nominatim.openstreetmap.org/">OpenStreetMap Nominatim</a> ·
 <a href="https://github.com/{esc(repository)}">source</a></footer>
+<script src="assets/theme.js"></script>
 {map_block}
 </body></html>
 """

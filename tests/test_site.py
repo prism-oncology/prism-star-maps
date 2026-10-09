@@ -56,11 +56,13 @@ def test_build(tmp_path):
 
     files = {p.relative_to(site).as_posix() for p in site.rglob("*") if p.is_file()}
     assert {"index.html", "tool.html", ".nojekyll", "assets/style.css", "assets/map.js",
+            "assets/theme.js",
             "assets/countries.geojson",
             "data/summary.json", "data/tool.json", "data/_all.json"} <= files  # fmt: skip
     index = (site / "index.html").read_text(encoding="utf-8")
     assert 'href="https://github.com/me/stargazer-map">source' in index
     assert 'href="tool.html"' in index
+    assert 'id="theme-toggle"' in index and "stargazer-map:theme" in index
     # A place label must not be able to close the embedded JSON script.
     tool = (site / "tool.html").read_text(encoding="utf-8")
     assert "Evil <\\/script>" in tool

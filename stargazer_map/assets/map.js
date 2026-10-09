@@ -2,16 +2,26 @@
   // build_site embeds {places, countries: {ISO2: count}, layers} in <script id="map-data">.
   var data = JSON.parse(document.getElementById('map-data').textContent);
   var map = L.map('map',{worldCopyJump:true,minZoom:1}).setView([25,10],2);
-  var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+  var dark, accent, surface, ink, tiles;
+  // Theme-dependent colours; re-read on every `themechange` (see theme.js).
+  function readTheme(){
+    var t = document.documentElement.dataset.theme;
+    dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    var css = getComputedStyle(document.documentElement);
+    accent = css.getPropertyValue('--accent').trim();
+    surface = css.getPropertyValue('--card').trim();
+    ink = css.getPropertyValue('--fg').trim();
+  }
   // Esri gray canvas: no API key needed (CARTO basemaps now require one).
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_' + (dark?'Dark':'Light') + '_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
-    maxZoom:16,
-    attribution:'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors &middot; Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>'
-  }).addTo(map);
-  var css = getComputedStyle(document.documentElement);
-  var accent = css.getPropertyValue('--accent').trim();
-  var surface = css.getPropertyValue('--card').trim();
-  var ink = css.getPropertyValue('--fg').trim();
+  function setTiles(){
+    if (tiles) map.removeLayer(tiles);
+    tiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_' + (dark?'Dark':'Light') + '_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
+      maxZoom:16,
+      attribution:'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors &middot; Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>'
+    }).addTo(map);
+  }
+  readTheme();
+  setTiles();
 
   // Countries sit below the bubbles whichever layer is switched on last.
   map.createPane('countries').style.zIndex = 350;
@@ -34,9 +44,9 @@
   // ---- Countries: one-hue sequential ramp, log scale ----------------------
   // Blue 100 -> 700. Light mode: few = light, many = dark. Dark mode flips the
   // anchor so "few" recedes into the dark basemap.
-  var RAMP = ['#cde2fb','#b7d3f6','#9ec5f4','#86b6ef','#6da7ec','#5598e7','#3987e5',
+  var BLUE = ['#cde2fb','#b7d3f6','#9ec5f4','#86b6ef','#6da7ec','#5598e7','#3987e5',
               '#2a78d6','#256abf','#1c5cab','#184f95','#104281','#0d366b'];
-  if (dark) RAMP = RAMP.slice().reverse();
+  function ramp(){ return dark ? BLUE.slice().reverse() : BLUE; }
   var counts = data.countries;
   var max = Math.max.apply(null, [1].concat(Object.keys(counts).map(function(k){return counts[k];})));
   // Log scale: a few big countries would otherwise flatten everyone else to the
@@ -93,11 +103,21 @@
     try { localStorage.setItem(KEY, JSON.stringify(now)); } catch(e) {}
   });
 
+  // ---- Repaint everything colour-dependent when the theme flips ------------
+  window.addEventListener('themechange', function(){
+    readTheme();
+    setTiles();
+    bubbles.eachLayer(function(m){ m.setStyle({color:accent,fillColor:accent}); });
+    countries.setStyle(countries.options.style);
+    if (map.hasLayer(countries)) { legend.remove(); legend.addTo(map); }
+  });
+
   if (bounds.length > 1) map.fitBounds(bounds,{padding:[30,30],maxZoom:5});
   else if (bounds.length === 1) map.setView(bounds[0],4);
 
-  // Linear interpolation along RAMP, t in [0, 1].
+  // Linear interpolation along the current ramp, t in [0, 1].
   function sample(t){
+    var RAMP = ramp();
     var x = Math.max(0, Math.min(1, t)) * (RAMP.length - 1);
     var i = Math.min(Math.floor(x), RAMP.length - 2), f = x - i;
     var a = hex(RAMP[i]), b = hex(RAMP[i+1]);
