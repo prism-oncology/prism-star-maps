@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stargazer-map"
+version = "0.1.0"
+description = "Weekly maps of where the stargazers of a GitHub user's or organisation's repositories are"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "PRISM Institute" }]
+requires-python = ">=3.10"
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+stargazer-map = "stargazer_map.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/prism-oncology/stargazer-map"
+Issues = "https://github.com/prism-oncology/stargazer-map/issues"
+
+[tool.hatch.build.targets.sdist]
+exclude = ["data", "site", ".github"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
