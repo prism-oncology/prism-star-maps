@@ -5,7 +5,6 @@
 [![Live maps](https://img.shields.io/badge/live%20maps-GitHub%20Pages-c2410c?logo=github)](https://prism-oncology.github.io/stargazer-map/)
 [![Update star maps](https://github.com/prism-oncology/stargazer-map/actions/workflows/update-maps.yml/badge.svg)](https://github.com/prism-oncology/stargazer-map/actions/workflows/update-maps.yml)
 [![Tests](https://github.com/prism-oncology/stargazer-map/actions/workflows/tests.yml/badge.svg)](https://github.com/prism-oncology/stargazer-map/actions/workflows/tests.yml)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776ab?logo=python&logoColor=white)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Proudly Vibe Coded - Midnight Glow](https://vibecoded.fyi/badges/plastic/main/proudly-vibe-coded-midnight-glow.svg)](https://vibecoded.fyi/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
