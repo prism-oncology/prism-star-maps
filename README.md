@@ -39,10 +39,29 @@ GitHub only lets admins and collaborators of a repository list its stargazers, s
 
 ## Run locally
 
-Requires Python 3.12+ and the [GitHub CLI](https://cli.github.com/), signed in with `gh auth login`.
+Requires Python 3.10+ and the [GitHub CLI](https://cli.github.com/), signed in with `gh auth login`.
 
 ```sh
-python star-map/fetch_stargazers.py              # writes data/; ORG=<owner> to map someone else
-python star-map/site_builder/build_site.py        # writes site/
+pip install git+https://github.com/prism-oncology/stargazer-map
+stargazer-map fetch               # writes ./data; --org <owner> to map someone else
+stargazer-map build               # writes ./site
 python -m http.server -d site
+```
+
+Run `stargazer-map fetch --help` to see every option. Each option can also be set with the environment variable from the table above. The same steps are available from Python:
+
+```python
+import stargazer_map
+
+stargazer_map.fetch("prism-oncology", "data")
+stargazer_map.build("data", "site")
+```
+
+## Development
+
+```sh
+git clone https://github.com/prism-oncology/stargazer-map && cd stargazer-map
+pip install -e ".[dev]"
+pytest
+ruff check . && ruff format .
 ```
